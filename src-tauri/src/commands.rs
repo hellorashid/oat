@@ -132,12 +132,13 @@ pub fn stop_recording(app: AppHandle, state: State<AppState>) -> Result<Recordin
     emit_recordings(&app);
 
     let app_handle = app.clone();
+    let finished_id = finished.id.clone();
     tauri::async_runtime::spawn(async move {
         transcribe_and_store(app_handle, finished).await;
     });
 
     let transcribing = state.transcribing.lock().expect("transcribing lock").clone();
-    recording_from_files(&dir, &finished.id, &transcribing)
+    recording_from_files(&dir, &finished_id, &transcribing)
 }
 
 #[tauri::command]

@@ -10,6 +10,7 @@ pub fn downmix_interleaved(input: &[f32], channels: usize) -> Vec<f32> {
         .collect()
 }
 
+#[allow(dead_code)]
 pub fn bytes_to_f32_le(bytes: &[u8], bytes_per_sample: usize) -> Vec<f32> {
     match bytes_per_sample {
         2 => bytes

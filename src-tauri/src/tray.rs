@@ -131,10 +131,13 @@ fn position_under_tray(window: &tauri::WebviewWindow, rect: &Rect) {
     let size = window.outer_size().ok();
     let win_w = size.map(|s| s.width as f64).unwrap_or(360.0);
     let win_h = size.map(|s| s.height as f64).unwrap_or(540.0);
-    let tray_x = rect.position.x;
-    let tray_y = rect.position.y;
-    let tray_w = rect.size.width;
-    let tray_h = rect.size.height;
+    let scale = window.scale_factor().unwrap_or(1.0);
+    let tray_pos: PhysicalPosition<i32> = rect.position.to_physical(scale);
+    let tray_size: tauri::PhysicalSize<u32> = rect.size.to_physical(scale);
+    let tray_x = tray_pos.x as f64;
+    let tray_y = tray_pos.y as f64;
+    let tray_w = tray_size.width as f64;
+    let tray_h = tray_size.height as f64;
 
     let mut x = tray_x + (tray_w / 2.0) - (win_w / 2.0);
     let mut y = tray_y + tray_h + 8.0;

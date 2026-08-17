@@ -26,7 +26,7 @@ The markdown file links to the audio next to it. Open either file with whatever 
 
 ### Prerequisites
 
-- Rust (stable)
+- Rust 1.85+ (stable)
 - Node.js 20+ and [pnpm](https://pnpm.io)
 - [Tauri 2 Linux/macOS/Windows dependencies](https://v2.tauri.app/start/prerequisites/)
 

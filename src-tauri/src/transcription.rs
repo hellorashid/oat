@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use serde::Deserialize;
 
 use crate::error::OatError;
-use crate::settings::{Provider, Settings};
+use crate::settings::Settings;
 
 const MAX_UPLOAD_BYTES: u64 = 24 * 1024 * 1024;
 
@@ -272,10 +272,6 @@ fn truncate(text: &str, max: usize) -> String {
 pub fn write_markdown(path: &Path, markdown: &str) -> Result<(), OatError> {
     std::fs::write(path, markdown)?;
     Ok(())
-}
-
-pub fn default_model_for(provider: Provider) -> &'static str {
-    provider.default_model()
 }
 
 #[cfg(test)]
