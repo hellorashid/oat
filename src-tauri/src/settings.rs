@@ -17,7 +17,7 @@ pub enum Provider {
 impl Provider {
     pub fn default_model(self) -> &'static str {
         match self {
-            Provider::Openai => "whisper-1",
+            Provider::Openai => "gpt-4o-mini-transcribe",
             Provider::Groq => "whisper-large-v3",
             Provider::Custom => "whisper-1",
         }

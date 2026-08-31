@@ -30,6 +30,7 @@ pub fn spawn_system_audio(
     }
 }
 
+#[cfg(any(target_os = "linux", test))]
 pub fn is_loopback_device_name(name: &str) -> bool {
     let name = name.to_lowercase();
     const HINTS: &[&str] = &[

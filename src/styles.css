@@ -61,19 +61,24 @@ button {
 
 .brand {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 8px;
+}
+
+.brand-mark {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  flex-shrink: 0;
+  display: block;
+  box-shadow: 0 0 0 1px rgba(36, 28, 20, 0.08);
 }
 
 .brand h1 {
   margin: 0;
   font-size: 18px;
   letter-spacing: -0.03em;
-}
-
-.brand span {
-  color: var(--muted);
-  font-size: 12px;
+  line-height: 1;
 }
 
 .tabs {
@@ -107,6 +112,11 @@ button {
   gap: 10px;
 }
 
+.recorder.compact {
+  padding: 4px 16px 10px;
+  gap: 6px;
+}
+
 .record-button {
   width: 84px;
   height: 84px;
@@ -118,6 +128,12 @@ button {
   display: grid;
   place-items: center;
   position: relative;
+}
+
+.recorder.compact .record-button {
+  width: 52px;
+  height: 52px;
+  box-shadow: 0 6px 14px rgba(196, 92, 38, 0.28);
 }
 
 .record-button:disabled {
@@ -137,16 +153,31 @@ button {
   background: #fff;
 }
 
+.recorder.compact .record-glyph {
+  width: 14px;
+  height: 14px;
+}
+
 .record-button.live .record-glyph {
   width: 20px;
   height: 20px;
   border-radius: 5px;
 }
 
+.recorder.compact .record-button.live .record-glyph {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
 .timer {
   font-variant-numeric: tabular-nums;
   font-size: 20px;
   letter-spacing: 0.04em;
+}
+
+.recorder.compact .timer {
+  font-size: 14px;
 }
 
 .hint {
@@ -208,11 +239,35 @@ button {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  cursor: pointer;
 }
 
-.item:hover {
-  border-color: rgba(196, 92, 38, 0.28);
+.item-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: var(--paper-deep);
+  color: var(--ink);
+}
+
+.icon-button:hover {
+  background: #e4ddd0;
+}
+
+.settings-panel {
+  padding-top: 4px;
 }
 
 .item-top {
@@ -331,6 +386,66 @@ button {
   color: var(--muted);
   line-height: 1.45;
   margin: 0 0 12px;
+}
+
+.permission-status {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fffdf8;
+}
+
+.permission-row {
+  display: grid;
+  grid-template-columns: 12px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.permission-row strong {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.permission-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+
+.permission-dot.granted {
+  background: var(--good);
+}
+
+.permission-dot.denied {
+  background: var(--warn);
+}
+
+.permission-dot.not_determined,
+.permission-dot.unknown,
+.permission-dot.unavailable {
+  background: #c4b8a4;
+}
+
+.permission-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.permission-note {
+  margin-top: 10px;
+}
+
+.help code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
 }
 
 @keyframes pulse {

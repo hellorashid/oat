@@ -69,10 +69,17 @@ pub async fn pick_storage_dir(
     app: AppHandle,
     state: State<'_, AppState>,
 ) -> Result<Option<PathBuf>, OatError> {
+    let window = app
+        .get_webview_window("main")
+        .ok_or_else(|| OatError::msg("Main window missing"))?;
     let (tx, rx) = tokio::sync::oneshot::channel();
-    app.dialog().file().pick_folder(move |folder| {
-        let _ = tx.send(folder);
-    });
+    app.dialog()
+        .file()
+        .set_title("Choose recordings folder")
+        .set_parent(&window)
+        .pick_folder(move |folder| {
+            let _ = tx.send(folder);
+        });
     let picked = rx
         .await
         .map_err(|_| OatError::msg("Folder picker was cancelled"))?;
@@ -187,7 +194,7 @@ pub fn reveal_recording(app: AppHandle, state: State<AppState>, id: String) -> R
     let wav = dir.join(format!("{id}.wav"));
     let path = if md.exists() { md } else { wav };
     app.opener()
-        .open_path(path.to_string_lossy(), None::<&str>)
+        .reveal_item_in_dir(path)
         .map_err(|error| OatError::msg(error.to_string()))?;
     Ok(())
 }
@@ -209,6 +216,30 @@ pub fn hide_window(app: AppHandle) -> Result<(), OatError> {
             .map_err(|error| OatError::msg(error.to_string()))?;
     }
     Ok(())
+}
+
+#[tauri::command]
+pub fn get_permission_status() -> crate::permissions::PermissionSnapshot {
+    crate::permissions::permission_snapshot()
+}
+
+#[tauri::command]
+pub fn open_privacy_settings(pane: String) -> Result<(), OatError> {
+    let pane = match pane.as_str() {
+        "microphone" => crate::permissions::PrivacyPane::Microphone,
+        "system_audio" | "screen_recording" => crate::permissions::PrivacyPane::SystemAudio,
+        other => {
+            return Err(OatError::msg(format!("Unknown privacy pane: {other}")));
+        }
+    };
+    crate::permissions::open_privacy_pane(pane)
+}
+
+#[tauri::command]
+pub fn request_system_permissions(
+    app: AppHandle,
+) -> Result<crate::permissions::PermissionStatus, OatError> {
+    crate::permissions::request_capture_permissions(&app)
 }
 
 async fn transcribe_and_store(app: AppHandle, finished: crate::audio::FinishedRecording) {

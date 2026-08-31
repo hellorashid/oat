@@ -154,6 +154,12 @@ async fn transcribe_chunk(
     } else {
         settings.model.clone()
     };
+    // whisper-1 supports verbose_json (timestamps). gpt-4o(-mini)-transcribe only allow json/text.
+    let response_format = if supports_verbose_json(&model) {
+        "verbose_json"
+    } else {
+        "json"
+    };
     let file_name = path
         .file_name()
         .and_then(|name| name.to_str())
@@ -166,7 +172,7 @@ async fn transcribe_chunk(
         .map_err(|error| OatError::msg(error.to_string()))?;
     let form = reqwest::multipart::Form::new()
         .text("model", model)
-        .text("response_format", "verbose_json")
+        .text("response_format", response_format)
         .part("file", part);
 
     let client = reqwest::Client::builder()
@@ -261,6 +267,12 @@ fn split_wav(path: &Path, samples_per_chunk: usize) -> Result<Vec<PathBuf>, OatE
     Ok(paths)
 }
 
+fn supports_verbose_json(model: &str) -> bool {
+    let model = model.trim().to_ascii_lowercase();
+    // OpenAI's gpt-4o*transcribe models reject verbose_json.
+    !(model.contains("gpt-4o") && model.contains("transcribe"))
+}
+
 fn truncate(text: &str, max: usize) -> String {
     if text.len() <= max {
         text.to_string()
@@ -315,5 +327,13 @@ mod tests {
         assert!(md.contains("[00:12] world"));
         assert!(md.contains("microphone + system audio"));
         assert!(md.contains("./2026-08-17-143052.wav"));
+    }
+
+    #[test]
+    fn verbose_json_only_for_whisper_family() {
+        assert!(supports_verbose_json("whisper-1"));
+        assert!(!supports_verbose_json("gpt-4o-transcribe"));
+        assert!(!supports_verbose_json("gpt-4o-mini-transcribe"));
+        assert!(!supports_verbose_json("gpt-4o-transcribe-api-ev3"));
     }
 }

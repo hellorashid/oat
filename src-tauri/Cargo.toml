@@ -29,7 +29,15 @@ thiserror = "2"
 tokio = { version = "1", features = ["fs", "macros", "rt", "sync", "time"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
-screencapturekit = { version = "8", features = ["macos_15_0"] }
+block2 = "0.6"
+dispatch2 = "0.3"
+objc2 = "0.6"
+objc2-app-kit = { version = "0.3", default-features = false, features = ["NSApplication", "NSWindow", "NSResponder", "NSView", "NSGraphics"] }
+objc2-core-audio-types = "0.3"
+objc2-core-graphics = { version = "0.3", default-features = false, features = ["CGWindow"] }
+objc2-core-media = { version = "0.3", default-features = false, features = ["CMBlockBuffer", "CMSampleBuffer", "CMTime", "objc2", "objc2-core-audio-types"] }
+objc2-foundation = { version = "0.3", features = ["NSArray", "NSError", "NSObject", "NSString"] }
+objc2-screen-capture-kit = { version = "0.3", default-features = false, features = ["SCShareableContent", "SCStream", "block2", "dispatch2", "objc2-core-media"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 wasapi = "0.19"

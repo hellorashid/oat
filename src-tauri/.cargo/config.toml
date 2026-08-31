@@ -1,0 +1,10 @@
+# macOS beta (26/27) workaround.
+#
+# The beta's dyld rejects rustc's stripped proc-macro dylibs with
+# "mis-aligned LINKEDIT string pool", which breaks the build of serde,
+# darling, phf, derive_more, and other proc-macro crates at compile time.
+# Disabling rustc's stripping produces dylibs the beta linker/loader accepts.
+#
+# Safe to remove once Apple/rustc ship a fix for the beta toolchain.
+[build]
+rustflags = ["-C", "strip=none"]

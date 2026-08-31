@@ -18,11 +18,8 @@ pub fn setup(app: &AppHandle) -> Result<(), OatError> {
     let menu = Menu::with_items(app, &[&show, &toggle, &quit])
         .map_err(|error| OatError::msg(error.to_string()))?;
 
-    let icon = app
-        .default_window_icon()
-        .cloned()
-        .or_else(|| Image::from_bytes(include_bytes!("../icons/32x32.png")).ok())
-        .ok_or_else(|| OatError::msg("Missing tray icon"))?;
+    let icon = Image::from_bytes(include_bytes!("../icons/trayTemplate.png"))
+        .map_err(|error| OatError::msg(format!("Missing tray icon: {error}")))?;
 
     TrayIconBuilder::with_id(TRAY_ID)
         .icon(icon)

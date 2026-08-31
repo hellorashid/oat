@@ -1,6 +1,7 @@
 mod audio;
 mod commands;
 mod error;
+mod permissions;
 mod recordings;
 mod settings;
 mod transcription;
@@ -100,6 +101,9 @@ pub fn run() {
             commands::reveal_recording,
             commands::open_storage_dir,
             commands::hide_window,
+            commands::get_permission_status,
+            commands::open_privacy_settings,
+            commands::request_system_permissions,
         ])
         .run(tauri::generate_context!())
         .expect("error while running oat");

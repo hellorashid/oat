@@ -1,13 +1,32 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import type { Provider, RecordingItem, SessionState, Settings } from "./types";
+import { useCallback, useEffect, useState } from "react";
+import oatMark from "./assets/oat-mark.svg";
+import type { RecordingItem, SessionState, Settings } from "./types";
+
+const OPENAI_MODELS = [
+  {
+    id: "gpt-4o-transcribe",
+    label: "GPT-4o Transcribe",
+    hint: "Best accuracy",
+  },
+  {
+    id: "gpt-4o-mini-transcribe",
+    label: "GPT-4o Mini Transcribe",
+    hint: "Fast & affordable",
+  },
+  {
+    id: "whisper-1",
+    label: "Whisper",
+    hint: "Classic Whisper",
+  },
+] as const;
 
 const defaultSettings: Settings = {
   storage_dir: null,
   api_key: "",
   provider: "openai",
-  model: "whisper-1",
+  model: "gpt-4o-mini-transcribe",
   base_url: "",
 };
 
@@ -69,10 +88,30 @@ export default function App() {
   const [recordings, setRecordings] = useState<RecordingItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [permissionBusy, setPermissionBusy] = useState(false);
+  const [permissionNote, setPermissionNote] = useState<string | null>(null);
+  const [permissionStatus, setPermissionStatus] = useState<{
+    system_audio: string;
+    microphone: string;
+    from_app_bundle: boolean;
+  } | null>(null);
 
   const loadLibrary = useCallback(async () => {
     const items = await invoke<RecordingItem[]>("list_library");
     setRecordings(items);
+  }, []);
+
+  const refreshPermissions = useCallback(async () => {
+    try {
+      const status = await invoke<{
+        system_audio: string;
+        microphone: string;
+        from_app_bundle: boolean;
+      }>("get_permission_status");
+      setPermissionStatus(status);
+    } catch {
+      // ignore — permissions UI is best-effort
+    }
   }, []);
 
   useEffect(() => {
@@ -87,12 +126,19 @@ export default function App() {
         if (disposed) {
           return;
         }
-        setSettings(nextSettings);
+        setSettings({
+          ...nextSettings,
+          provider: "openai",
+          model: OPENAI_MODELS.some((item) => item.id === nextSettings.model)
+            ? nextSettings.model
+            : defaultSettings.model,
+        });
         setSession(nextSession);
         if (!nextSettings.storage_dir) {
           setTab("settings");
         }
         await loadLibrary();
+        await refreshPermissions();
       } catch (bootError) {
         setError(String(bootError));
       }
@@ -113,28 +159,21 @@ export default function App() {
       }
     };
     window.addEventListener("keydown", onKey);
+    const onFocus = () => {
+      void refreshPermissions();
+    };
+    window.addEventListener("focus", onFocus);
 
     return () => {
       disposed = true;
       window.removeEventListener("keydown", onKey);
+      window.removeEventListener("focus", onFocus);
       void unlistenSession.then((unlisten) => unlisten());
       void unlistenLibrary.then((unlisten) => unlisten());
     };
-  }, [loadLibrary]);
+  }, [loadLibrary, refreshPermissions]);
 
   const canRecord = Boolean(settings.storage_dir);
-  const recordHint = useMemo(() => {
-    if (!settings.storage_dir) {
-      return "Choose a folder in Settings before recording.";
-    }
-    if (session.recording) {
-      return "Capturing your microphone and system audio. Click to stop.";
-    }
-    if (!settings.api_key) {
-      return "Ready to record. Add an API key to transcribe afterward.";
-    }
-    return "Records your voice and meeting audio, then writes a local transcript.";
-  }, [session.recording, settings.api_key, settings.storage_dir]);
 
   async function toggleRecording() {
     setError(null);
@@ -167,8 +206,14 @@ export default function App() {
     setSaving(true);
     setError(null);
     try {
-      const next = await invoke<Settings>("save_settings", { settings });
-      setSettings(next);
+      const next = await invoke<Settings>("save_settings", {
+        settings: {
+          ...settings,
+          provider: "openai",
+          base_url: "",
+        },
+      });
+      setSettings({ ...next, provider: "openai" });
     } catch (saveError) {
       setError(String(saveError));
     } finally {
@@ -176,22 +221,59 @@ export default function App() {
     }
   }
 
-  async function changeProvider(provider: Provider) {
-    const model =
-      provider === "groq"
-        ? "whisper-large-v3"
-        : provider === "openai"
-          ? "whisper-1"
-          : settings.model;
-    setSettings((current) => ({ ...current, provider, model }));
+  async function openPrivacy(pane: "microphone" | "system_audio") {
+    setError(null);
+    try {
+      await invoke("open_privacy_settings", { pane });
+    } catch (privacyError) {
+      setError(String(privacyError));
+    }
+  }
+
+  async function requestPermissions() {
+    setPermissionBusy(true);
+    setError(null);
+    setPermissionNote(null);
+    try {
+      const status = await invoke<{
+        system_audio: string;
+        granted: boolean;
+        identity: string;
+        from_app_bundle: boolean;
+        note: string;
+      }>("request_system_permissions");
+      setPermissionNote(
+        `System audio: ${status.system_audio}${status.from_app_bundle ? "" : " (not from Oat.dev.app)"}. ${status.note}`,
+      );
+      await refreshPermissions();
+    } catch (permissionError) {
+      setError(String(permissionError));
+    } finally {
+      setPermissionBusy(false);
+    }
+  }
+
+  function permissionLabel(value: string): string {
+    switch (value) {
+      case "granted":
+        return "Granted";
+      case "denied":
+        return "Not granted";
+      case "not_determined":
+        return "Not requested yet";
+      case "unavailable":
+        return "Unavailable";
+      default:
+        return value;
+    }
   }
 
   return (
     <div className="app">
       <header className="header" data-tauri-drag-region>
         <div className="brand">
+          <img className="brand-mark" src={oatMark} alt="" width={22} height={22} />
           <h1>Oat</h1>
-          <span>local notes</span>
         </div>
         <div className="tabs">
           <button
@@ -202,51 +284,44 @@ export default function App() {
           </button>
           <button
             className={tab === "settings" ? "active" : ""}
-            onClick={() => setTab("settings")}
+            onClick={() => {
+              setTab("settings");
+              void refreshPermissions();
+            }}
           >
             Settings
           </button>
         </div>
       </header>
 
-      <section className="recorder">
-        <button
-          className={`record-button${session.recording ? " live" : ""}`}
-          onClick={() => void toggleRecording()}
-          disabled={!canRecord && !session.recording}
-          aria-label={session.recording ? "Stop recording" : "Start recording"}
-        >
-          <span className="record-glyph" />
-        </button>
-        <div className="timer">
-          {session.recording ? formatElapsed(session.elapsed_ms) : "Start recording"}
-        </div>
-        <p className="hint">{recordHint}</p>
-        {error ? <div className="error">{error}</div> : null}
-      </section>
-
       {tab === "recordings" ? (
-        <section className="panel">
-          <h2>Library</h2>
-          {recordings.length === 0 ? (
-            <div className="empty">
-              Nothing here yet. Start a recording from the menu bar and Oat
-              will keep the audio and markdown in your chosen folder.
+        <>
+          <section className="recorder compact">
+            <button
+              className={`record-button${session.recording ? " live" : ""}`}
+              onClick={() => void toggleRecording()}
+              disabled={!canRecord && !session.recording}
+              aria-label={session.recording ? "Stop recording" : "Start recording"}
+            >
+              <span className="record-glyph" />
+            </button>
+            <div className="timer">
+              {session.recording ? formatElapsed(session.elapsed_ms) : "Start recording"}
             </div>
-          ) : (
-            <div className="list">
-              {recordings.map((item) => (
-                <div className="item" key={item.id}>
-                  <div
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => void invoke("reveal_recording", { id: item.id })}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ") {
-                        void invoke("reveal_recording", { id: item.id });
-                      }
-                    }}
-                  >
+            {error ? <div className="error">{error}</div> : null}
+          </section>
+
+          <section className="panel">
+            <h2>Library</h2>
+            {recordings.length === 0 ? (
+              <div className="empty">
+                Nothing here yet. Start a recording from the menu bar and Oat
+                will keep the audio and markdown in your chosen folder.
+              </div>
+            ) : (
+              <div className="list">
+                {recordings.map((item) => (
+                  <div className="item" key={item.id}>
                     <div className="item-top">
                       <strong>{formatWhen(item.created_at)}</strong>
                       <span>{formatDuration(item.duration_seconds)}</span>
@@ -257,23 +332,49 @@ export default function App() {
                       </span>
                       <span>{item.id}</span>
                     </div>
+                    {item.error && item.status !== "needs_key" ? (
+                      <div className="item-error">{item.error}</div>
+                    ) : null}
+                    <div className="item-actions">
+                      <button
+                        className="icon-button"
+                        title="Show in Finder"
+                        aria-label="Show in Finder"
+                        onClick={() => void invoke("reveal_recording", { id: item.id })}
+                      >
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 16 16"
+                          fill="none"
+                          aria-hidden="true"
+                        >
+                          <path
+                            d="M1.5 4.5A1.5 1.5 0 0 1 3 3h3.2l1.1 1.2H13A1.5 1.5 0 0 1 14.5 5.7v6.3A1.5 1.5 0 0 1 13 13.5H3A1.5 1.5 0 0 1 1.5 12V4.5Z"
+                            stroke="currentColor"
+                            strokeWidth="1.3"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      </button>
+                      {item.status === "failed" || item.status === "needs_key" ? (
+                        <button
+                          className="retry"
+                          onClick={() => void invoke("retry_transcription", { id: item.id })}
+                        >
+                          Retry transcript
+                        </button>
+                      ) : null}
+                    </div>
                   </div>
-                  {item.error ? <div className="item-error">{item.error}</div> : null}
-                  {item.status === "failed" || item.status === "needs_key" ? (
-                    <button
-                      className="retry"
-                      onClick={() => void invoke("retry_transcription", { id: item.id })}
-                    >
-                      Retry transcript
-                    </button>
-                  ) : null}
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
+                ))}
+              </div>
+            )}
+          </section>
+        </>
       ) : (
-        <section className="panel">
+        <section className="panel settings-panel">
+          {error ? <div className="error">{error}</div> : null}
           <h2>Storage</h2>
           <p className="help">
             Recordings and transcripts stay on this computer. Oat never hosts
@@ -300,43 +401,27 @@ export default function App() {
 
           <h2 style={{ marginTop: 22 }}>Transcription</h2>
           <p className="help">
-            Bring your own key. OpenAI Whisper, Groq, or any compatible
-            `/v1/audio/transcriptions` endpoint.
+            Bring your own OpenAI key. Audio is sent to OpenAI’s speech-to-text
+            API; recordings stay on this computer.
           </p>
           <div className="field">
-            <label>Provider</label>
-            <select
-              value={settings.provider}
-              onChange={(event) => void changeProvider(event.target.value as Provider)}
-            >
-              <option value="openai">OpenAI</option>
-              <option value="groq">Groq</option>
-              <option value="custom">Compatible API</option>
-            </select>
-          </div>
-          {settings.provider === "custom" ? (
-            <div className="field">
-              <label>Base URL</label>
-              <input
-                value={settings.base_url}
-                placeholder="https://api.example.com/v1"
-                onChange={(event) =>
-                  setSettings((current) => ({
-                    ...current,
-                    base_url: event.target.value,
-                  }))
-                }
-              />
-            </div>
-          ) : null}
-          <div className="field">
             <label>Model</label>
-            <input
+            <select
               value={settings.model}
               onChange={(event) =>
-                setSettings((current) => ({ ...current, model: event.target.value }))
+                setSettings((current) => ({
+                  ...current,
+                  provider: "openai",
+                  model: event.target.value,
+                }))
               }
-            />
+            >
+              {OPENAI_MODELS.map((model) => (
+                <option key={model.id} value={model.id}>
+                  {model.label} — {model.hint}
+                </option>
+              ))}
+            </select>
           </div>
           <div className="field">
             <label>API key</label>
@@ -349,14 +434,67 @@ export default function App() {
               }
             />
           </div>
-          <p className="help">
-            On macOS, allow Microphone and Screen Recording for Oat so meeting
-            audio can be captured. On Linux, a Pulse/PipeWire monitor device is
-            used when available.
-          </p>
           <button className="primary" onClick={() => void save()} disabled={saving}>
             {saving ? "Saving…" : "Save settings"}
           </button>
+
+          <h2 style={{ marginTop: 22 }}>System permissions</h2>
+          <p className="help">
+            Meeting audio needs macOS system-audio access (Screen &amp; System
+            Audio Recording). After enabling, quit and reopen Oat if status
+            stays denied.
+          </p>
+          {permissionStatus ? (
+            <div className="permission-status">
+              <div className="permission-row">
+                <span
+                  className={`permission-dot ${permissionStatus.microphone}`}
+                  aria-hidden="true"
+                />
+                <span>Microphone</span>
+                <strong>{permissionLabel(permissionStatus.microphone)}</strong>
+              </div>
+              <div className="permission-row">
+                <span
+                  className={`permission-dot ${permissionStatus.system_audio}`}
+                  aria-hidden="true"
+                />
+                <span>System audio</span>
+                <strong>{permissionLabel(permissionStatus.system_audio)}</strong>
+              </div>
+            </div>
+          ) : null}
+          <div className="permission-actions">
+            <button
+              className="ghost"
+              onClick={() => void requestPermissions()}
+              disabled={permissionBusy}
+            >
+              {permissionBusy ? "Requesting…" : "Request system audio access"}
+            </button>
+            <button
+              className="ghost"
+              onClick={() => {
+                void openPrivacy("system_audio");
+                window.setTimeout(() => void refreshPermissions(), 1000);
+              }}
+            >
+              Open system audio settings
+            </button>
+            <button
+              className="ghost"
+              onClick={() => {
+                void openPrivacy("microphone");
+                window.setTimeout(() => void refreshPermissions(), 1000);
+              }}
+            >
+              Open microphone settings
+            </button>
+            <button className="ghost" onClick={() => void refreshPermissions()}>
+              Refresh status
+            </button>
+          </div>
+          {permissionNote ? <p className="help permission-note">{permissionNote}</p> : null}
         </section>
       )}
     </div>
