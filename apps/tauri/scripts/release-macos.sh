@@ -12,7 +12,8 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 VERSION="$(node -p "require('./package.json').version")"
-OUT="$ROOT/releases/v${VERSION}"
+REPO="$(cd "$ROOT/../.." && pwd)"
+OUT="$REPO/releases/v${VERSION}"
 APP="src-tauri/target/release/bundle/macos/Oat.app"
 DMG_NAME="Oat_${VERSION}_aarch64.dmg"
 

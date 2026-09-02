@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" fill="none">
+  <rect x="28" y="5" width="24" height="45" rx="12" fill="currentColor"/>
+  <g transform="translate(5 40)">
+    <path
+      fill="currentColor"
+      fill-rule="nonzero"
+      d="M0 0C0 9.283 3.687 18.185 10.251 24.749C16.815 31.313 25.717 35 35 35C35 15.556 19.328 0 0 0ZM35 35C44.283 35 53.185 31.313 59.749 24.749C66.313 18.185 70 9.283 70 0C50.556 0 35 15.556 35 35Z"
+    />
+  </g>
+</svg>
