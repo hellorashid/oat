@@ -10,6 +10,13 @@ node_modules
 dist
 dist-ssr
 *.local
+.env
+.env.*
+*.pem
+*.p12
+*.p8
+*.mobileprovision
+.conductor/
 
 src-tauri/target
 src-tauri/gen
@@ -31,5 +38,7 @@ apps/tauri/dist
 xcuserdata/
 *.xcuserstate
 DerivedData/
+.derivedData/
+apps/macos/.derivedData/
 apps/macos/build/
 releases/

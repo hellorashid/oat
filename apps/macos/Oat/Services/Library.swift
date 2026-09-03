@@ -2,7 +2,11 @@ import AppKit
 import Foundation
 
 enum Library {
-    static func list(in directory: URL, transcribing: Set<String>) -> [Recording] {
+    static func list(
+        in directory: URL,
+        transcribing: Set<String>,
+        includeDurations: Bool = true
+    ) -> [Recording] {
         let fm = FileManager.default
         guard let entries = try? fm.contentsOfDirectory(
             at: directory,
@@ -15,12 +19,19 @@ enum Library {
         var items: [Recording] = []
         for url in entries where url.pathExtension.lowercased() == "wav" {
             let id = url.deletingPathExtension().lastPathComponent
-            items.append(item(id: id, directory: directory, transcribing: transcribing))
+            items.append(
+                item(id: id, directory: directory, transcribing: transcribing, includeDuration: includeDurations)
+            )
         }
         return items.sorted { $0.createdAt > $1.createdAt }
     }
 
-    static func item(id: String, directory: URL, transcribing: Set<String>) -> Recording {
+    static func item(
+        id: String,
+        directory: URL,
+        transcribing: Set<String>,
+        includeDuration: Bool = true
+    ) -> Recording {
         let wavURL = directory.appendingPathComponent("\(id).wav")
         let mdURL = directory.appendingPathComponent("\(id).md")
         let errorURL = directory.appendingPathComponent("\(id).error")
@@ -51,7 +62,7 @@ enum Library {
         return Recording(
             id: id,
             createdAt: createdAt,
-            durationSeconds: WavIO.durationSeconds(at: wavURL),
+            durationSeconds: includeDuration ? WavIO.durationSeconds(at: wavURL) : nil,
             wavURL: wavURL,
             markdownURL: hasMarkdown ? mdURL : nil,
             status: status,

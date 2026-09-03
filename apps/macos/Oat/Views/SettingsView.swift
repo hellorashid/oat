@@ -185,9 +185,6 @@ struct SettingsView: View {
         .onChange(of: appState.settings.localModel) { _, _ in
             appState.persistSettings()
         }
-        .task {
-            await appState.checkForUpdates()
-        }
         .confirmationDialog(
             "Delete \(modelPendingDelete?.label ?? "model")?",
             isPresented: Binding(

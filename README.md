@@ -1,28 +1,52 @@
 # Oat
 
-A tiny recorder. Pick a local folder, start a recording, and Oat saves the audio plus a markdown transcript on your machine. The native Mac app uses a regular window and stays in the menu bar when that window is closed.
+A tiny meeting recorder for your Mac.
 
-This repo has two apps that share the same on-disk format (`{id}.wav` + `{id}.md` in a folder you choose):
+Pick a folder, start a recording, and Oat writes a `.wav` plus a markdown transcript next to it. It lives in the menu bar. No account, no cloud workspace — bring your own editor and agent.
 
-| App | Path | Use when |
-| --- | --- | --- |
-| Tauri (React + Rust) | [`apps/tauri`](apps/tauri) | Cross-platform (macOS, Windows, Linux) |
-| Native macOS (SwiftUI) | [`apps/macos`](apps/macos) | macOS-only, simpler native shell |
+[oat.raz.lol](https://oat.raz.lol)
+
+## What it does
+
+- Records your microphone and, when macOS allows it, system audio from meetings (Zoom, Meet, and similar)
+- Transcribes on this Mac with [WhisperKit](https://github.com/argmaxinc/WhisperKit), or optionally with OpenAI
+- Saves files in a folder you choose
+- Stays in the menu bar when the window is closed
+
+## Privacy
+
+Audio and transcripts stay on your machine by default. Whisper models download once, then run locally. If you switch the engine to OpenAI, audio is uploaded to OpenAI with a key you paste in Settings.
+
+Settings (folder path, API key, model) live in the app’s Application Support directory, not in this repo.
+
+## Download
+
+Grab the latest macOS DMG from [Releases](https://github.com/hellorashid/oat/releases/latest).
+
+Grant **Microphone** and **System Audio Recording Only** (under Screen & System Audio Recording). Oat uses a Core Audio tap, not screen capture.
+
+## Native macOS
+
+macOS 14+. Full Xcode is required.
+
+```bash
+open apps/macos/Oat.xcodeproj
+```
+
+Run the **Oat** scheme. See [`apps/macos/README.md`](apps/macos/README.md) for permissions, on-device Whisper, and Developer ID / notarized releases.
 
 ## Tauri
+
+A cross-platform port lives in [`apps/tauri`](apps/tauri). Same on-disk format; transcription is cloud-only (OpenAI, Groq, or a compatible API).
 
 ```bash
 pnpm install
 pnpm tauri dev
 ```
 
-See [`apps/tauri/README.md`](apps/tauri/README.md) for permissions, transcription, and packaging.
+See [`apps/tauri/README.md`](apps/tauri/README.md) for permissions and packaging.
 
-## Native macOS
-
-Open [`apps/macos/Oat.xcodeproj`](apps/macos/Oat.xcodeproj) in Xcode (macOS 14+) and run the Oat scheme. See [`apps/macos/README.md`](apps/macos/README.md).
-
-## Storage layout
+## Storage
 
 ```
 your-folder/
@@ -30,6 +54,4 @@ your-folder/
   2026-08-17-143052.md
 ```
 
-Both apps can point at the same folder. Settings (API key, folder path, local Whisper model) are stored per app.
-
-The native Mac app can transcribe on-device with WhisperKit (pick a model in Settings; it downloads on first use). OpenAI remains optional. The Tauri app still uses a cloud API key.
+Both apps can point at the same folder.

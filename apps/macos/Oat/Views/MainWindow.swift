@@ -28,10 +28,7 @@ struct MainWindow: View {
                     .frame(minWidth: 196)
                     .onChange(of: appState.tab) { _, tab in
                         if tab == .settings {
-                            Task {
-                                await appState.refreshPermissions()
-                                await appState.checkForUpdates()
-                            }
+                            appState.prepareSettings()
                         }
                     }
                 }
@@ -40,8 +37,7 @@ struct MainWindow: View {
         .oatWindowGlass()
         .background(HideOnCloseWindow())
         .onAppear {
-            Task { await appState.refreshPermissions() }
-            appState.refreshLibrary()
+            appState.activate()
         }
     }
 }

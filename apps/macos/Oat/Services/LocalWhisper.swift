@@ -7,39 +7,11 @@ actor LocalWhisper {
     private var cachedModel: LocalWhisperModel?
     private var cachedKit: WhisperKit?
 
-    static var modelsDirectory: URL {
-        let folder = AppPaths.supportDirectory.appendingPathComponent("whisperkit", isDirectory: true)
-        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        return folder
-    }
-
-    static func isDownloaded(_ model: LocalWhisperModel) -> Bool {
-        resolvedModelFolder(for: model) != nil
-    }
-
-    static func downloadedModels() -> [LocalWhisperModel] {
-        LocalWhisperModel.allCases.filter(isDownloaded)
-    }
-
+    static var modelsDirectory: URL { LocalWhisperStorage.modelsDirectory }
+    static func isDownloaded(_ model: LocalWhisperModel) -> Bool { LocalWhisperStorage.isDownloaded(model) }
+    static func downloadedModels() -> [LocalWhisperModel] { LocalWhisperStorage.downloadedModels() }
     static func resolvedModelFolder(for model: LocalWhisperModel) -> URL? {
-        let expected = defaultModelFolder(for: model)
-        if hasCoreML(at: expected) {
-            return expected
-        }
-        let root = modelsDirectory
-            .appendingPathComponent("models", isDirectory: true)
-            .appendingPathComponent("argmaxinc", isDirectory: true)
-            .appendingPathComponent("whisperkit-coreml", isDirectory: true)
-        guard let entries = try? FileManager.default.contentsOfDirectory(
-            at: root,
-            includingPropertiesForKeys: [.isDirectoryKey],
-            options: [.skipsHiddenFiles]
-        ) else {
-            return nil
-        }
-        return entries.first { url in
-            url.lastPathComponent == model.folderName && hasCoreML(at: url)
-        }
+        LocalWhisperStorage.resolvedModelFolder(for: model)
     }
 
     func download(_ model: LocalWhisperModel, progress: @escaping @Sendable (Double) -> Void) async throws {
@@ -57,7 +29,7 @@ actor LocalWhisper {
             cachedModel = nil
         }
 
-        let folders = Self.foldersToDelete(for: model)
+        let folders = LocalWhisperStorage.foldersToDelete(for: model)
         guard !folders.isEmpty else { return }
         for folder in folders {
             try FileManager.default.removeItem(at: folder)
@@ -91,7 +63,7 @@ actor LocalWhisper {
         } else {
             folder = try await fetchModel(model, progress: onDownloadProgress ?? { _ in })
         }
-        guard Self.hasCoreML(at: folder) else {
+        guard LocalWhisperStorage.hasCoreML(at: folder) else {
             throw OatError.needsModel
         }
 
@@ -121,33 +93,6 @@ actor LocalWhisper {
                 progress(snapshot.fractionCompleted)
             }
         )
-    }
-
-    private static func foldersToDelete(for model: LocalWhisperModel) -> [URL] {
-        var folders: [URL] = []
-        if let resolved = resolvedModelFolder(for: model) {
-            folders.append(resolved)
-        }
-        let expected = defaultModelFolder(for: model)
-        if FileManager.default.fileExists(atPath: expected.path), !folders.contains(expected) {
-            folders.append(expected)
-        }
-        return folders
-    }
-
-    private static func defaultModelFolder(for model: LocalWhisperModel) -> URL {
-        modelsDirectory
-            .appendingPathComponent("models", isDirectory: true)
-            .appendingPathComponent("argmaxinc", isDirectory: true)
-            .appendingPathComponent("whisperkit-coreml", isDirectory: true)
-            .appendingPathComponent(model.folderName, isDirectory: true)
-    }
-
-    private static func hasCoreML(at folder: URL) -> Bool {
-        let fm = FileManager.default
-        let compiled = folder.appendingPathComponent("AudioEncoder.mlmodelc")
-        let package = folder.appendingPathComponent("AudioEncoder.mlpackage")
-        return fm.fileExists(atPath: compiled.path) || fm.fileExists(atPath: package.path)
     }
 
     private static func transcript(from results: [TranscriptionResult]) -> Transcript {

@@ -18,6 +18,26 @@ Or from the command line:
 xcodebuild -project apps/macos/Oat.xcodeproj -scheme Oat -configuration Debug build
 ```
 
+## Release (Developer ID + notarization)
+
+Release builds sign with **Developer ID Application: Basic Studio Inc (UBWBPNVBAN)**, enable hardened runtime, and do not inject `get-task-allow`.
+
+One-time: store notary credentials in the keychain (Apple ID + [app-specific password](https://appleid.apple.com)):
+
+```bash
+./apps/macos/scripts/setup-notary.sh
+```
+
+Then archive, export, notarize, and staple:
+
+```bash
+./apps/macos/scripts/release.sh
+```
+
+That writes `releases/v{version}/Oat.app` and `Oat_{version}_universal.dmg`. Use `SKIP_NOTARY=1` to produce a signed DMG without submitting it.
+
+Debug runs from Xcode stay ad-hoc so local iteration does not require the Developer ID cert.
+
 ## Permissions
 
 Grant **Microphone** and **System Audio Recording Only** (under Screen & System Audio Recording). Oat uses a Core Audio tap, not screen capture.

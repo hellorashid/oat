@@ -37,6 +37,7 @@ final class AppState {
     private var pendingUpdate: AppUpdate?
     private var isCheckingUpdates = false
     private var libraryGeneration = 0
+    private var didActivate = false
 
     var canRecord: Bool { settings.storageURL != nil }
     var currentVersion: String { Updater.currentVersion }
@@ -55,13 +56,32 @@ final class AppState {
             settings.model = OpenAIModel.gpt4oMiniTranscribe.rawValue
         }
         settings.provider = .openai
-        refreshLocalModelStatus()
         if settings.storageURL == nil {
             tab = .settings
         }
+    }
+
+    /// Runs once after the UI is up: library scan, permissions, and background update checks.
+    func activate() {
+        guard !didActivate else { return }
+        didActivate = true
         refreshLibrary()
         Task { await refreshPermissions() }
+        if settings.engine == .local || tab == .settings {
+            refreshLocalModelStatus()
+        }
         startUpdateChecks()
+        if tab == .settings {
+            Task { await checkForUpdates() }
+        }
+    }
+
+    func prepareSettings() {
+        refreshLocalModelStatus()
+        Task {
+            await refreshPermissions()
+            await checkForUpdates()
+        }
     }
 
     func refreshLibrary() {
@@ -73,11 +93,17 @@ final class AppState {
         let generation = libraryGeneration
         let transcribing = transcribing
         Task {
-            let items = await Task.detached {
-                Library.list(in: directory, transcribing: transcribing)
+            let fastItems = await Task.detached {
+                Library.list(in: directory, transcribing: transcribing, includeDurations: false)
             }.value
             guard generation == libraryGeneration else { return }
-            recordings = items
+            recordings = fastItems
+
+            let fullItems = await Task.detached {
+                Library.list(in: directory, transcribing: transcribing, includeDurations: true)
+            }.value
+            guard generation == libraryGeneration else { return }
+            recordings = fullItems
         }
     }
 
@@ -134,8 +160,8 @@ final class AppState {
     }
 
     func refreshLocalModelStatus() {
-        localModelReady = LocalWhisper.isDownloaded(settings.localModel)
-        downloadedLocalModels = LocalWhisper.downloadedModels()
+        localModelReady = LocalWhisperStorage.isDownloaded(settings.localModel)
+        downloadedLocalModels = LocalWhisperStorage.downloadedModels()
     }
 
     func downloadLocalModel() async {
@@ -285,6 +311,8 @@ final class AppState {
     private func startUpdateChecks() {
         updateCheckTask?.cancel()
         updateCheckTask = Task { [weak self] in
+            // Let the window appear before hitting the network.
+            try? await Task.sleep(for: .seconds(45))
             await self?.checkForUpdates()
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(6 * 60 * 60))
