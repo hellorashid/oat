@@ -42,3 +42,5 @@ DerivedData/
 apps/macos/.derivedData/
 apps/macos/build/
 releases/
+assets/dmg/background.tiff
+

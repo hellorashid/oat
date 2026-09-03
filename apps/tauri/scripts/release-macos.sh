@@ -24,14 +24,8 @@ pnpm exec tauri bundle --bundles app --no-sign --ci
 echo "==> Ad-hoc codesign"
 codesign --force --deep --sign - "$APP"
 
-echo "==> Assembling ${DMG_NAME} with hdiutil"
-STAGE="$(mktemp -d)"
-cp -R "$APP" "$STAGE/"
-ln -s /Applications "$STAGE/Applications"
-mkdir -p "$OUT"
-rm -f "$OUT/$DMG_NAME"
-hdiutil create -volname "Oat" -srcfolder "$STAGE" -ov -format UDZO "$OUT/$DMG_NAME"
-rm -rf "$STAGE"
+echo "==> Assembling ${DMG_NAME}"
+"$REPO/scripts/pack-dmg.sh" "$APP" "$OUT/$DMG_NAME" "Oat"
 
 echo "==> Copying .app into $OUT"
 rm -rf "$OUT/Oat.app"

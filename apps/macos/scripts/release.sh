@@ -86,14 +86,7 @@ if codesign --display --entitlements - "$APP" 2>/dev/null | grep -q "get-task-al
 fi
 
 echo "==> Assembling ${DMG_NAME}"
-STAGE="$(mktemp -d)"
-cleanup() { rm -rf "$STAGE"; }
-trap cleanup EXIT
-cp -R "$APP" "$STAGE/"
-ln -s /Applications "$STAGE/Applications"
-mkdir -p "$OUT"
-rm -f "$OUT/$DMG_NAME"
-hdiutil create -volname "Oat" -srcfolder "$STAGE" -ov -format UDZO "$OUT/$DMG_NAME"
+"$REPO/scripts/pack-dmg.sh" "$APP" "$OUT/$DMG_NAME" "Oat"
 
 if [[ "${SKIP_NOTARY:-}" == "1" ]]; then
   echo "==> Skipping notarization (SKIP_NOTARY=1)"
