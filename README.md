@@ -9,13 +9,13 @@ Pick a folder, start a recording, and Oat writes a `.wav` plus a markdown transc
 ## What it does
 
 - Records your microphone and, when macOS allows it, system audio from meetings (Zoom, Meet, and similar)
-- Transcribes on this Mac with [WhisperKit](https://github.com/argmaxinc/WhisperKit), or optionally with OpenAI
+- Transcribes on this Mac with [WhisperKit](https://github.com/argmaxinc/WhisperKit) after you download a model, or optionally with OpenAI. Transcription is off until you turn it on.
 - Saves files in a folder you choose
 - Stays in the menu bar when the window is closed
 
 ## Privacy
 
-Audio and transcripts stay on your machine by default. Whisper models download once, then run locally. If you switch the engine to OpenAI, audio is uploaded to OpenAI with a key you paste in Settings.
+Audio and transcripts stay on your machine by default. Whisper models download only when you choose Download in Settings, then run locally. If you switch the engine to OpenAI, audio is uploaded to OpenAI with a key you paste in Settings.
 
 Settings (folder path, API key, model) live in the app’s Application Support directory, not in this repo.
 

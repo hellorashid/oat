@@ -5,15 +5,13 @@ enum Transcriber {
 
     static func transcribe(
         wav url: URL,
-        settings: Settings,
-        onDownloadProgress: (@Sendable (Double) -> Void)? = nil
+        settings: Settings
     ) async throws -> Transcript {
         switch settings.engine {
         case .local:
             return try await LocalWhisper.shared.transcribe(
                 wav: url,
-                model: settings.localModel,
-                onDownloadProgress: onDownloadProgress
+                model: settings.localModel
             )
         case .openai:
             return try await transcribeRemote(wav: url, settings: settings)

@@ -230,6 +230,10 @@ private struct RecordingRow: View {
             appState.tab = .settings
             return
         }
+        if item.status == .needsModel || (appState.settings.engine == .local && !appState.localModelReady) {
+            appState.tab = .settings
+            return
+        }
         appState.retryTranscription(item)
     }
 

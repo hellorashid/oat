@@ -38,10 +38,9 @@ actor LocalWhisper {
 
     func transcribe(
         wav url: URL,
-        model: LocalWhisperModel,
-        onDownloadProgress: (@Sendable (Double) -> Void)? = nil
+        model: LocalWhisperModel
     ) async throws -> Transcript {
-        let kit = try await loadKit(model: model, onDownloadProgress: onDownloadProgress)
+        let kit = try await loadKit(model: model)
         let results = try await kit.transcribe(
             audioPath: url.path,
             decodeOptions: DecodingOptions(verbose: false, skipSpecialTokens: true)
@@ -49,21 +48,12 @@ actor LocalWhisper {
         return Self.transcript(from: results)
     }
 
-    private func loadKit(
-        model: LocalWhisperModel,
-        onDownloadProgress: (@Sendable (Double) -> Void)?
-    ) async throws -> WhisperKit {
+    private func loadKit(model: LocalWhisperModel) async throws -> WhisperKit {
         if let cachedKit, cachedModel == model {
             return cachedKit
         }
 
-        let folder: URL
-        if let existing = Self.resolvedModelFolder(for: model) {
-            folder = existing
-        } else {
-            folder = try await fetchModel(model, progress: onDownloadProgress ?? { _ in })
-        }
-        guard LocalWhisperStorage.hasCoreML(at: folder) else {
+        guard let folder = Self.resolvedModelFolder(for: model), LocalWhisperStorage.hasCoreML(at: folder) else {
             throw OatError.needsModel
         }
 

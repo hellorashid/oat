@@ -116,7 +116,7 @@ struct SettingsView: View {
             } footer: {
                 switch appState.settings.engine {
                 case .local:
-                    Text("Whisper runs on this Mac. The first transcript downloads the selected model.")
+                    Text("Whisper runs on this Mac after you download a model. Oat will not download one on its own.")
                 case .openai:
                     Text("Bring your own OpenAI key. Audio is sent to OpenAI; files stay on this Mac.")
                 case .off:

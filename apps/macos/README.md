@@ -62,8 +62,6 @@ The app checks [GitHub Releases](https://github.com/hellorashid/oat/releases/lat
 
 ## Transcription
 
-By default, new installs transcribe **on this Mac** with [WhisperKit](https://github.com/argmaxinc/WhisperKit) (Core ML Whisper, not whisper.cpp). Pick a multilingual or English-only model in Settings (Tiny through Large v3) and download it, or let the first recording fetch the selected model. Files stay local. You can also turn transcription off.
-
-OpenAI is still available: switch the transcription engine, pick a cloud model, and paste an API key. Audio is then uploaded to OpenAI.
+By default, transcription is **off** — recordings are saved as audio only. To transcribe on this Mac, switch the engine to On this Mac, pick a Whisper model, and download it in Settings. Oat will not fetch a model automatically. OpenAI is optional if you paste a key.
 
 Whisper models are stored under Application Support (`com.raz.oat.macos/whisperkit/`).

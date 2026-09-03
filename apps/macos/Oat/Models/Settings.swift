@@ -153,7 +153,7 @@ struct Settings: Codable, Equatable, Sendable {
         provider: Provider = .openai,
         model: String = OpenAIModel.gpt4oMiniTranscribe.rawValue,
         baseURL: String = "",
-        engine: TranscriptionEngine = .local,
+        engine: TranscriptionEngine = .off,
         localModel: LocalWhisperModel = .base
     ) {
         self.storageDir = storageDir
@@ -172,8 +172,7 @@ struct Settings: Codable, Equatable, Sendable {
         provider = try container.decodeIfPresent(Provider.self, forKey: .provider) ?? .openai
         model = try container.decodeIfPresent(String.self, forKey: .model) ?? OpenAIModel.gpt4oMiniTranscribe.rawValue
         baseURL = try container.decodeIfPresent(String.self, forKey: .baseURL) ?? ""
-        // Existing settings.json has no engine; keep OpenAI so saved API keys still work.
-        engine = try container.decodeIfPresent(TranscriptionEngine.self, forKey: .engine) ?? .openai
+        engine = try container.decodeIfPresent(TranscriptionEngine.self, forKey: .engine) ?? .off
         localModel = try container.decodeIfPresent(LocalWhisperModel.self, forKey: .localModel) ?? .base
     }
 
