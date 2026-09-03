@@ -77,8 +77,11 @@ final class AppState {
     }
 
     func prepareSettings() {
-        refreshLocalModelStatus()
+        // Defer past the tab-switch frame so the segmented control can settle
+        // before we touch the filesystem / network on the main actor.
         Task {
+            await Task.yield()
+            refreshLocalModelStatus()
             await refreshPermissions()
             await checkForUpdates()
         }
