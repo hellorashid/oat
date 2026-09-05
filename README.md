@@ -11,7 +11,8 @@ Pick a folder, start a recording, and Oat writes a `.wav` plus a markdown transc
 - Records your microphone and, when macOS allows it, system audio from meetings (Zoom, Meet, and similar)
 - Transcribes on this Mac with [WhisperKit](https://github.com/argmaxinc/WhisperKit) after you download a model, or optionally with OpenAI. Transcription is off until you turn it on.
 - Saves files in a folder you choose
-- Stays in the menu bar when the window is closed
+- Can check Calendar once a minute and ask before recording a meeting
+- Stays in the menu bar and leaves the Dock when the window is closed
 
 ## Privacy
 
@@ -23,7 +24,7 @@ Settings (folder path, API key, model) live in the app’s Application Support d
 
 Grab the latest macOS DMG from [Releases](https://github.com/hellorashid/oat/releases/latest).
 
-Grant **Microphone** and **System Audio Recording Only** (under Screen & System Audio Recording). Oat uses a Core Audio tap, not screen capture.
+Grant **Microphone** and **System Audio Recording Only** (under Screen & System Audio Recording). Calendar access is optional and used only for meeting prompts. Oat uses a Core Audio tap, not screen capture.
 
 ## Native macOS
 

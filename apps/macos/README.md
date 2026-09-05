@@ -10,7 +10,7 @@ Full **Xcode** is required (the Command Line Tools package cannot build this app
 open apps/macos/Oat.xcodeproj
 ```
 
-Run the **Oat** scheme. The app opens a regular window and also lives in the menu bar (no Dock icon). Closing the window leaves Oat running; click the tray icon for Start/Stop, Open Oat, Settings, and Quit.
+Run the **Oat** scheme. The app opens a regular window and also lives in the menu bar. Closing the window removes Oat from the Dock but leaves it running; click the tray icon for Start/Stop, Open Oat, Settings, and Quit.
 
 Or from the command line:
 
@@ -40,7 +40,7 @@ Debug runs from Xcode stay ad-hoc so local iteration does not require the Develo
 
 ## Permissions
 
-Grant **Microphone** and **System Audio Recording Only** (under Screen & System Audio Recording). Oat uses a Core Audio tap, not screen capture.
+Grant **Microphone** and **System Audio Recording Only** (under Screen & System Audio Recording). Calendar access is optional; when meeting prompts are enabled, Oat checks the local calendar once a minute and asks before recording. Oat uses a Core Audio tap, not screen capture.
 
 TCC attributes to the `.app` bundle. Run from Xcode or a built app, not a raw binary.
 

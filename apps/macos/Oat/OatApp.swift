@@ -59,13 +59,22 @@ enum AppWindow {
     static let mainId = "main"
 
     @MainActor
-    static func show() {
+    @discardableResult
+    static func show() -> NSWindow? {
+        NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
-        guard let window = NSApp.windows.first(where: \.isOatMainWindow) else { return }
+        guard let window = NSApp.windows.first(where: \.isOatMainWindow) else { return nil }
         if window.isMiniaturized {
             window.deminiaturize(nil)
         }
         window.makeKeyAndOrderFront(nil)
+        return window
+    }
+
+    @MainActor
+    static func hide(_ window: NSWindow) {
+        window.orderOut(nil)
+        NSApp.setActivationPolicy(.accessory)
     }
 }
 

@@ -59,7 +59,7 @@ struct MainWindow: View {
     }
 }
 
-/// Keeps the app alive in the menu bar: close hides the window instead of destroying it.
+/// Keeps the app alive in the menu bar: close hides the window and its Dock icon.
 private struct HideOnCloseWindow: NSViewRepresentable {
     func makeCoordinator() -> Coordinator {
         Coordinator()
@@ -89,7 +89,7 @@ private struct HideOnCloseWindow: NSViewRepresentable {
         }
 
         func windowShouldClose(_ sender: NSWindow) -> Bool {
-            sender.orderOut(nil)
+            AppWindow.hide(sender)
             return false
         }
     }

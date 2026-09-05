@@ -136,6 +136,7 @@ struct Settings: Codable, Equatable, Sendable {
     var baseURL: String
     var engine: TranscriptionEngine
     var localModel: LocalWhisperModel
+    var meetingDetectionEnabled: Bool
 
     enum CodingKeys: String, CodingKey {
         case storageDir = "storage_dir"
@@ -145,6 +146,7 @@ struct Settings: Codable, Equatable, Sendable {
         case baseURL = "base_url"
         case engine
         case localModel = "local_model"
+        case meetingDetectionEnabled = "meeting_detection_enabled"
     }
 
     init(
@@ -154,7 +156,8 @@ struct Settings: Codable, Equatable, Sendable {
         model: String = OpenAIModel.gpt4oMiniTranscribe.rawValue,
         baseURL: String = "",
         engine: TranscriptionEngine = .off,
-        localModel: LocalWhisperModel = .base
+        localModel: LocalWhisperModel = .base,
+        meetingDetectionEnabled: Bool = false
     ) {
         self.storageDir = storageDir
         self.apiKey = apiKey
@@ -163,6 +166,7 @@ struct Settings: Codable, Equatable, Sendable {
         self.baseURL = baseURL
         self.engine = engine
         self.localModel = localModel
+        self.meetingDetectionEnabled = meetingDetectionEnabled
     }
 
     init(from decoder: Decoder) throws {
@@ -174,6 +178,7 @@ struct Settings: Codable, Equatable, Sendable {
         baseURL = try container.decodeIfPresent(String.self, forKey: .baseURL) ?? ""
         engine = try container.decodeIfPresent(TranscriptionEngine.self, forKey: .engine) ?? .off
         localModel = try container.decodeIfPresent(LocalWhisperModel.self, forKey: .localModel) ?? .base
+        meetingDetectionEnabled = try container.decodeIfPresent(Bool.self, forKey: .meetingDetectionEnabled) ?? false
     }
 
     var hasAPIKey: Bool {

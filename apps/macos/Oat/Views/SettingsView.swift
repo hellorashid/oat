@@ -125,7 +125,26 @@ struct SettingsView: View {
             }
 
             Section {
+                Toggle("Prompt me to record calendar meetings", isOn: $appState.settings.meetingDetectionEnabled)
+            } header: {
+                Text("Meetings")
+            } footer: {
+                Text("Checks Calendar once a minute and asks before recording. Calendar details stay on this Mac.")
+            }
+
+            Section {
                 if let permission = appState.permission {
+                    permissionRow(
+                        title: "Calendar",
+                        systemImage: "calendar",
+                        state: permission.calendar,
+                        busy: appState.requestingCalendar
+                    ) {
+                        Task { await appState.requestCalendarAccess() }
+                    } openSettings: {
+                        appState.openPrivacy(.calendar)
+                    }
+
                     permissionRow(
                         title: "Microphone",
                         systemImage: "mic.fill",
@@ -184,6 +203,9 @@ struct SettingsView: View {
         }
         .onChange(of: appState.settings.localModel) { _, _ in
             appState.persistSettings()
+        }
+        .onChange(of: appState.settings.meetingDetectionEnabled) { _, _ in
+            appState.updateMeetingChecks()
         }
         .confirmationDialog(
             "Delete \(modelPendingDelete?.label ?? "model")?",
