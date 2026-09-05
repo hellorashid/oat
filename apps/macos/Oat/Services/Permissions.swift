@@ -1,8 +1,10 @@
 import AppKit
 import AVFoundation
+import EventKit
 import Foundation
 
 enum PrivacyPane {
+    case calendar
     case microphone
     case systemAudio
 }
@@ -15,6 +17,7 @@ enum PermissionState: String, Equatable {
 }
 
 struct PermissionSnapshot: Equatable {
+    var calendar: PermissionState
     var microphone: PermissionState
     var systemAudio: PermissionState
 }
@@ -28,9 +31,23 @@ enum Permissions {
 
     static func snapshot() async -> PermissionSnapshot {
         PermissionSnapshot(
+            calendar: calendarState(),
             microphone: microphoneState(),
             systemAudio: systemAudioState()
         )
+    }
+
+    static func calendarState() -> PermissionState {
+        switch EKEventStore.authorizationStatus(for: .event) {
+        case .fullAccess, .authorized:
+            return .granted
+        case .denied, .restricted, .writeOnly:
+            return .denied
+        case .notDetermined:
+            return .notDetermined
+        @unknown default:
+            return .unavailable
+        }
     }
 
     static func microphoneState() -> PermissionState {
@@ -75,6 +92,11 @@ enum Permissions {
     static func open(_ pane: PrivacyPane) {
         let urls: [String]
         switch pane {
+        case .calendar:
+            urls = [
+                "x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension?Privacy_Calendars",
+                "x-apple.systempreferences:com.apple.preference.security?Privacy_Calendars",
+            ]
         case .microphone:
             urls = [
                 "x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension?Privacy_Microphone",

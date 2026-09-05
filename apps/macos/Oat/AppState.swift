@@ -20,6 +20,7 @@ final class AppState {
     var transcribing: Set<String> = []
     var errorMessage: String?
     var permission: PermissionSnapshot?
+    var requestingCalendar = false
     var requestingMicrophone = false
     var requestingSystemAudio = false
     var localModelReady = false
@@ -29,6 +30,7 @@ final class AppState {
     var updateStatus: UpdateStatus = .idle
 
     private let store = SettingsStore()
+    private let meetingMonitor = MeetingMonitor()
     private let recorder = Recorder()
     private var elapsedTask: Task<Void, Never>?
     private var lastRecordedAt: Date?
@@ -71,6 +73,9 @@ final class AppState {
             refreshLocalModelStatus()
         }
         startUpdateChecks()
+        if settings.meetingDetectionEnabled {
+            Task { await startMeetingChecks() }
+        }
         if tab == .settings {
             Task { await checkForUpdates() }
         }
@@ -229,6 +234,19 @@ final class AppState {
         requestingMicrophone = false
     }
 
+    func updateMeetingChecks() {
+        persistSettings()
+        if settings.meetingDetectionEnabled {
+            Task { await startMeetingChecks(showError: true) }
+        } else {
+            meetingMonitor.stop()
+        }
+    }
+
+    func requestCalendarAccess() async {
+        await startMeetingChecks(showError: true)
+    }
+
     func requestSystemAudioAccess() async {
         requestingSystemAudio = true
         errorMessage = nil
@@ -250,6 +268,38 @@ final class AppState {
 
     func quit() {
         NSApplication.shared.terminate(nil)
+    }
+
+    private func startMeetingChecks(showError: Bool = false) async {
+        requestingCalendar = true
+        errorMessage = nil
+        let granted = await meetingMonitor.requestAccess()
+        permission = await Permissions.snapshot()
+        requestingCalendar = false
+        guard settings.meetingDetectionEnabled else { return }
+        meetingMonitor.start { [weak self] meeting in
+            self?.offerToRecord(meeting)
+        }
+        if !granted, showError {
+            errorMessage = "Allow Calendar access so Oat can detect meetings."
+        }
+    }
+
+    private func offerToRecord(_ meeting: DetectedMeeting) {
+        guard !isRecording, let window = AppWindow.show() else { return }
+        let start = DateFormatter.localizedString(from: meeting.startsAt, dateStyle: .none, timeStyle: .short)
+        let alert = NSAlert()
+        alert.messageText = "Record \(meeting.title)?"
+        alert.informativeText = "This calendar meeting starts at \(start)."
+        alert.addButton(withTitle: "Start Recording")
+        alert.addButton(withTitle: "Not Now")
+        alert.beginSheetModal(for: window) { [weak self] response in
+            guard response == .alertFirstButtonReturn else { return }
+            Task { @MainActor [weak self] in
+                guard let self, !self.isRecording else { return }
+                await self.startRecording()
+            }
+        }
     }
 
     func checkForUpdates(userInitiated: Bool = false) async {
