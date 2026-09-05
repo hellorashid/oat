@@ -13,19 +13,16 @@ final class MeetingMonitor {
     private var task: Task<Void, Never>?
 
     func requestAccess() async -> Bool {
-        switch EKEventStore.authorizationStatus(for: .event) {
-        case .fullAccess, .authorized:
+        if Permissions.calendarState() == .granted {
             return true
-        case .notDetermined:
-            return await withCheckedContinuation { continuation in
-                eventStore.requestFullAccessToEvents { granted, _ in
-                    continuation.resume(returning: granted)
-                }
+        }
+        guard EKEventStore.authorizationStatus(for: .event) == .notDetermined else {
+            return false
+        }
+        return await withCheckedContinuation { continuation in
+            eventStore.requestFullAccessToEvents { granted, _ in
+                continuation.resume(returning: granted)
             }
-        case .denied, .restricted, .writeOnly:
-            return false
-        @unknown default:
-            return false
         }
     }
 
@@ -33,8 +30,7 @@ final class MeetingMonitor {
         guard task == nil else { return }
         task = Task { [weak self] in
             while let self, !Task.isCancelled {
-                let authorization = EKEventStore.authorizationStatus(for: .event)
-                if authorization == .fullAccess, let meeting = self.detectMeeting() {
+                if Permissions.calendarState() == .granted, let meeting = self.detectMeeting() {
                     onMeeting(meeting)
                 }
                 try? await Task.sleep(for: .seconds(60))

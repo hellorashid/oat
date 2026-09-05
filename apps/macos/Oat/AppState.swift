@@ -271,6 +271,7 @@ final class AppState {
     }
 
     private func startMeetingChecks(showError: Bool = false) async {
+        guard !requestingCalendar else { return }
         requestingCalendar = true
         errorMessage = nil
         let granted = await meetingMonitor.requestAccess()
